@@ -1,0 +1,2010 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Adaptive Chess Master 🔥</title>
+    <style>
+        :root {
+            --primary-bg: #1a1a2e; /* Deep space blue */
+            --secondary-bg: #16213e; /* Darker blue */
+            --accent-color1: #0f3460; /* Rich blue */
+            --accent-color2: #e94560; /* Vibrant magenta/red */
+            --text-color: #e0f7fa; /* Light cyan */
+            --highlight-color: #f9c80e; /* Bright yellow */
+            --square-light: #eaeaea; /* Off-white for light squares */
+            --square-dark: #6c7a89; /* Slate gray for dark squares */
+            --font-main: 'Poppins', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            --font-title: 'Orbitron', 'Poppins', sans-serif; /* Futuristic font */
+            --border-radius-medium: 12px;
+            --border-radius-large: 20px;
+            --shadow-light: 0 5px 15px rgba(0, 0, 0, 0.2);
+            --shadow-strong: 0 10px 30px rgba(0,0,0,0.4);
+        }
+
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Poppins:wght@300;400;600&display=swap');
+
+        body {
+            font-family: var(--font-main);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start; /* Align to top for scrolling */
+            min-height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, var(--primary-bg), var(--secondary-bg));
+            color: var(--text-color);
+            padding: 20px;
+            box-sizing: border-box;
+            overflow-x: hidden;
+        }
+
+        .main-layout {
+            display: flex;
+            flex-direction: row;
+            align-items: flex-start;
+            gap: 25px;
+            width: 100%;
+            max-width: 1200px;
+        }
+
+        .game-column {
+            flex: 2;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .controls-column {
+            flex: 1;
+            background-color: rgba(22, 33, 62, 0.7); /* secondary-bg with alpha */
+            padding: 20px;
+            border-radius: var(--border-radius-large);
+            box-shadow: var(--shadow-strong);
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        h1 {
+            font-family: var(--font-title);
+            margin-bottom: 20px;
+            color: var(--accent-color2);
+            text-shadow: 0 0 15px rgba(233, 69, 96, 0.7);
+            font-size: 2.8em;
+            text-align: center;
+        }
+
+        .game-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: var(--accent-color1);
+            padding: 25px;
+            border-radius: var(--border-radius-large);
+            box-shadow: var(--shadow-strong);
+        }
+
+        .game-controls {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 15px;
+        }
+
+        .btn {
+            padding: 12px 25px;
+            font-size: 1em;
+            font-family: var(--font-main);
+            font-weight: 600;
+            color: white;
+            border: none;
+            border-radius: var(--border-radius-medium);
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
+            box-shadow: var(--shadow-light);
+        }
+
+        #new-game-btn { background-color: var(--accent-color2); }
+        #new-game-btn:hover { background-color: #c7304a; transform: translateY(-2px); box-shadow: 0 8px 20px rgba(233, 69, 96, 0.5); }
+
+        #toggle-coach-btn { background-color: #1abc9c; }
+        #toggle-coach-btn:hover { background-color: #16a085; transform: translateY(-2px); box-shadow: 0 8px 20px rgba(26, 188, 156, 0.4); }
+
+        #chess-board {
+            display: grid;
+            grid-template-columns: repeat(8, minmax(50px, 1fr));
+            grid-template-rows: repeat(8, minmax(50px, 1fr));
+            width: 90vw;
+            max-width: 550px; /* Slightly larger */
+            aspect-ratio: 1 / 1;
+            border: 5px solid var(--secondary-bg);
+            border-radius: var(--border-radius-medium);
+            box-shadow: 0 0 25px rgba(0,0,0,0.6);
+            margin-bottom: 20px;
+        }
+
+        .square {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: clamp(22px, 5vw, 42px);
+            cursor: pointer;
+            transition: background-color 0.2s ease, transform 0.1s ease;
+            position: relative; /* For pseudo-elements */
+        }
+
+        .square.light { background-color: var(--square-light); color: var(--secondary-bg); }
+        .square.dark { background-color: var(--square-dark); color: var(--square-light); }
+
+        .square.selected {
+            background-color: var(--highlight-color) !important;
+            box-shadow: inset 0 0 12px rgba(0,0,0,0.6);
+            transform: scale(1.05);
+            z-index: 10;
+        }
+
+        .square.valid-move::before {
+            content: '';
+            display: block;
+            width: 35%;
+            height: 35%;
+            background-color: rgba(39, 174, 96, 0.6); /* Semi-transparent green */
+            border-radius: 50%;
+            transition: transform 0.2s ease;
+        }
+         .square.valid-move:hover::before {
+            transform: scale(1.2);
+        }
+
+        .square.last-move-from::after, .square.last-move-to::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            border-radius: 50%;
+            pointer-events: none;
+            opacity: 0.5;
+        }
+        .square.last-move-from::after {
+            width: 75%; height: 75%;
+            background-color: rgba(52, 152, 219, 0.4); /* Light blue */
+        }
+        .square.last-move-to::after {
+            width: 85%; height: 85%;
+            background-color: rgba(52, 152, 219, 0.6); /* Stronger blue */
+        }
+
+        .square.in-check::after { /* Highlight for king in check */
+            content: '';
+            position: absolute;
+            top:0; left:0; right:0; bottom:0;
+            border: 4px solid var(--accent-color2);
+            border-radius: 2px; /* Keep square shape for border */
+            animation: pulse-check 1.5s infinite;
+        }
+        @keyframes pulse-check {
+            0% { box-shadow: 0 0 0 0 rgba(233, 69, 96, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(233, 69, 96, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(233, 69, 96, 0); }
+        }
+
+
+        #game-message {
+            font-size: 1.4em;
+            font-weight: 600;
+            margin-bottom: 15px;
+            min-height: 1.6em;
+            text-align: center;
+            color: var(--highlight-color);
+            text-shadow: 0 0 8px rgba(249, 200, 14, 0.5);
+        }
+
+        .captured-pieces-area {
+            width: 100%;
+            max-width: 550px;
+            margin-top: 15px;
+            padding: 15px;
+            background-color: rgba(30, 40, 70, 0.8);
+            border-radius: var(--border-radius-medium);
+            font-size: 1em;
+        }
+        .captured-pieces-area div {
+            margin-bottom: 8px;
+            word-wrap: break-word;
+            color: var(--text-color);
+        }
+        #captured-white, #captured-black {
+             font-size: 1.4em;
+        }
+
+        /* Controls Column Styling */
+        .controls-column h2 {
+            font-family: var(--font-title);
+            color: var(--accent-color2);
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        .control-section {
+            background-color: rgba(15, 52, 96, 0.5); /* accent-color1 with alpha */
+            padding: 15px;
+            border-radius: var(--border-radius-medium);
+            margin-bottom: 20px;
+        }
+        .control-section h3 {
+            margin-top: 0;
+            margin-bottom: 10px;
+            color: var(--highlight-color);
+            border-bottom: 1px solid var(--highlight-color);
+            padding-bottom: 5px;
+        }
+        .control-section label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 0.9em;
+        }
+        .control-section select, .control-section input[type="range"] {
+            width: 100%;
+            padding: 8px;
+            border-radius: 6px;
+            border: 1px solid var(--accent-color1);
+            background-color: var(--secondary-bg);
+            color: var(--text-color);
+            margin-bottom: 10px;
+            box-sizing: border-box;
+        }
+        .control-section button {
+            background-color: var(--accent-color2);
+        }
+        .control-section button:hover {
+             background-color: #c7304a;
+        }
+
+        #voice-status {
+            font-style: italic;
+            color: #95a5a6;
+            text-align: center;
+            margin-top: 10px;
+            font-size: 0.9em;
+        }
+        #coach-advice {
+            margin-top:10px;
+            padding:10px;
+            background-color: rgba(249, 200, 14, 0.1);
+            border-left: 3px solid var(--highlight-color);
+            border-radius: 4px;
+            font-size: 0.9em;
+            min-height: 2em;
+        }
+
+        /* Modal Styling */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.7);
+            animation: fadeIn 0.3s ease-out;
+        }
+        .modal-content {
+            background-color: var(--secondary-bg);
+            margin: 10% auto;
+            padding: 25px;
+            border: 1px solid var(--accent-color1);
+            width: 80%;
+            max-width: 600px;
+            border-radius: var(--border-radius-large);
+            box-shadow: var(--shadow-strong);
+            color: var(--text-color);
+        }
+        .modal-content h2 {
+            color: var(--accent-color2);
+            font-family: var(--font-title);
+        }
+        .close-btn {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            transition: color 0.2s;
+        }
+        .close-btn:hover, .close-btn:focus {
+            color: var(--accent-color2);
+            text-decoration: none;
+            cursor: pointer;
+        }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideIn { from { transform: translateY(-50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .modal-content { animation: slideIn 0.4s ease-out; }
+
+        #post-game-analysis-content ul { list-style-type: disc; padding-left: 20px; }
+
+
+        /* Gamification / Badges */
+        #gamification-area { text-align: center; }
+        .badge {
+            display: inline-block;
+            padding: 5px 10px;
+            margin: 5px;
+            background-color: var(--highlight-color);
+            color: var(--primary-bg);
+            border-radius: 15px;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+
+
+        @media (max-width: 900px) {
+            .main-layout { flex-direction: column; align-items: center; }
+            .controls-column { width: 90%; max-width: 550px; max-height: none; margin-top: 20px; }
+        }
+        @media (max-width: 600px) {
+            body { padding: 10px; }
+            h1 { font-size: 2em; }
+            #chess-board {
+                grid-template-columns: repeat(8, minmax(38px, 1fr));
+                grid-template-rows: repeat(8, minmax(38px, 1fr));
+            }
+            .square { font-size: clamp(20px, 6vw, 34px); }
+            #game-message { font-size: 1.2em; }
+            .main-layout { gap: 15px; }
+            .modal-content { width: 90%; margin: 15% auto; }
+        }
+
+    </style>
+</head>
+<body>
+    <h1>🔥 Adaptive Chess Master 🔥</h1>
+
+    <div class="main-layout">
+        <div class="game-column">
+            <div class="game-container">
+                <div class="game-controls">
+                    <button id="new-game-btn" class="btn">New Game</button>
+                    <button id="toggle-coach-btn" class="btn">Coach: OFF</button>
+                    <button id="voice-command-btn" class="btn" title="Enable Voice Commands (Experimental)">🎤</button>
+                </div>
+
+                <div id="game-message">Loading...</div>
+
+                <div id="chess-board">
+                    <!-- Squares will be generated by JavaScript -->
+                </div>
+
+                <div class="captured-pieces-area">
+                    <div id="captured-white">Captured by White: </div>
+                    <div id="captured-black">Captured by Black: </div>
+                </div>
+            </div>
+            <div id="post-game-replay-controls" style="margin-top: 15px; display:none;">
+                <button id="prev-move-btn" class="btn">◀ Prev</button>
+                <span id="replay-move-info" style="margin: 0 10px;">Move 0/0</span>
+                <button id="next-move-btn" class="btn">Next ▶</button>
+                <button id="exit-replay-btn" class="btn" style="margin-left:10px;">Exit Replay</button>
+            </div>
+        </div>
+
+        <div class="controls-column">
+            <h2>Master Controls</h2>
+
+            <div class="control-section" id="ai-settings-section">
+                <h3>🧠 AI Settings</h3>
+                <label for="ai-personality-select">AI Personality:</label>
+                <select id="ai-personality-select">
+                    <option value="adaptive">Adaptive (Default)</option>
+                    <option value="aggressive">Aggressive Attacker</option>
+                    <option value="defensive">Solid Defender</option>
+                    <option value="positional">Positional Strategist</option>
+                    <option value="mimic">Mimic Player</option>
+                    <option value="counter">Counter Player</option>
+                </select>
+                <label for="ai-difficulty-slider">AI Difficulty (Depth): <span id="ai-difficulty-value">2</span></label>
+                <input type="range" id="ai-difficulty-slider" min="1" max="4" value="2">
+                <label for="ai-adaptation-speed-slider">Adaptation Speed: <span id="ai-adaptation-speed-value">0.5</span></label>
+                <input type="range" id="ai-adaptation-speed-slider" min="0.1" max="1.0" step="0.1" value="0.5">
+            </div>
+
+            <div class="control-section" id="visualization-section">
+                <h3>👁️ Visualizations (Conceptual)</h3>
+                <label><input type="checkbox" id="heatmap-toggle"> Show Board Control Heatmap</label>
+                <label><input type="checkbox" id="prediction-toggle"> Show AI Move Prediction</label>
+            </div>
+
+            <div class="control-section" id="coach-section">
+                <h3>💡 Real-Time Coach</h3>
+                <div id="coach-advice">Coach advice will appear here...</div>
+                <div id="voice-status">Voice commands inactive.</div>
+            </div>
+
+            <div class="control-section" id="gamification-area">
+                <h3>🏆 Achievements</h3>
+                <div id="badges-container">
+                    <!-- <span class="badge">First Win!</span> -->
+                </div>
+                <p>Games Won: <span id="stats-games-won">0</span></p>
+                <p>Puzzles Solved: <span id="stats-puzzles-solved">0</span> (Feature coming soon!)</p>
+            </div>
+
+             <div class="control-section" id="match-history-section">
+                <h3>📜 Match History (Recent)</h3>
+                <ul id="match-history-list">
+                    <!-- Populated by JS -->
+                </ul>
+                <button id="clear-history-btn" class="btn" style="font-size:0.9em; padding: 8px 15px; background-color: #7f8c8d;">Clear History</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for Post-Game Analysis / Game Over -->
+    <div id="post-game-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" id="close-post-game-modal">×</span>
+            <h2 id="post-game-title">Game Over!</h2>
+            <p id="post-game-message"></p>
+            <div id="post-game-analysis-content">
+                <h4>Quick Analysis:</h4>
+                <ul id="post-game-highlights">
+                    <!-- Populated by JS -->
+                </ul>
+                <h4>Strategy Tips (Conceptual):</h4>
+                <p id="strategy-recommendation">Consider varying your opening moves. Try developing your knights before bishops in some games.</p>
+            </div>
+            <button id="replay-last-game-btn" class="btn" style="margin-top:15px;">Replay Last Game</button>
+        </div>
+    </div>
+
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/sql-wasm.js"></script>
+    <script>
+        // sql.js configuration
+        const SQL_JS_CONFIG = {
+          locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/${file}`
+        };
+
+        // --- Global Variables ---
+        let dbManager;
+        let game;
+        let ai;
+        let ui;
+        let speechRecognition;
+        let coachEnabled = false;
+        let currentReplayGame = null;
+        let currentReplayMoveIndex = 0;
+
+        const PAWN = 'p', KNIGHT = 'n', BISHOP = 'b', ROOK = 'r', QUEEN = 'q', KING = 'k';
+        const WHITE = 'w', BLACK = 'b';
+
+        const INITIAL_BOARD = [
+            ['r','n','b','q','k','b','n','r'],
+            ['p','p','p','p','p','p','p','p'],
+            [null,null,null,null,null,null,null,null],
+            [null,null,null,null,null,null,null,null],
+            [null,null,null,null,null,null,null,null],
+            [null,null,null,null,null,null,null,null],
+            ['P','P','P','P','P','P','P','P'],
+            ['R','N','B','Q','K','B','N','R']
+        ];
+
+        function getPieceDetails(pieceChar) {
+            if (!pieceChar) return null;
+            const color = pieceChar === pieceChar.toUpperCase() ? WHITE : BLACK;
+            const type = pieceChar.toLowerCase();
+            return { type, color, char: pieceChar };
+        }
+
+        // --- Database Manager ---
+        class DBManager {
+            constructor() {
+                this.dbInstance = null;
+            }
+
+            async init() {
+                try {
+                    const SQL = await initSqlJs(SQL_JS_CONFIG);
+                    const storedDb = localStorage.getItem('chessMasterDb_v2'); // Changed key for new schema
+                    if (storedDb) {
+                        const byteArray = this._base64ToUint8Array(storedDb);
+                        this.dbInstance = new SQL.Database(byteArray);
+                        console.log("Loaded database from localStorage.");
+                    } else {
+                        this.dbInstance = new SQL.Database();
+                        console.log("Created new database.");
+                    }
+                    this._initializeSchema();
+                    this.save();
+                } catch (error) {
+                    console.error("Failed to initialize SQL.js or database:", error);
+                    this.dbInstance = null;
+                    alert("Could not initialize the learning database. Game will run without learning features.");
+                }
+            }
+
+            _initializeSchema() {
+                if (!this.dbInstance) return;
+                this.dbInstance.run(`
+                    CREATE TABLE IF NOT EXISTS player_moves (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        game_session_id TEXT,
+                        move_number INTEGER,
+                        piece TEXT,
+                        from_square TEXT,
+                        to_square TEXT,
+                        is_capture BOOLEAN,
+                        is_check BOOLEAN,
+                        promoted_to TEXT,
+                        fen_before TEXT,
+                        fen_after TEXT,
+                        timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+                    );
+                `);
+                 this.dbInstance.run(`
+                    CREATE TABLE IF NOT EXISTS game_sessions (
+                        game_session_id TEXT PRIMARY KEY,
+                        start_time DATETIME DEFAULT CURRENT_TIMESTAMP,
+                        end_time DATETIME,
+                        player_color TEXT, /* 'w' or 'b' */
+                        ai_personality TEXT,
+                        ai_difficulty INTEGER,
+                        result TEXT, /* 'win', 'loss', 'draw' for player */
+                        player_opening_sequence TEXT, /* e.g., e2e4_e7e5_g1f3 */
+                        termination_reason TEXT /* 'checkmate', 'stalemate', 'resignation', etc. */
+                    );
+                `);
+                this.dbInstance.run(`
+                    CREATE TABLE IF NOT EXISTS player_profile (
+                        parameter TEXT PRIMARY KEY,
+                        value TEXT
+                    );
+                `);
+                 this.dbInstance.run(`
+                    CREATE TABLE IF NOT EXISTS ai_settings (
+                        setting_key TEXT PRIMARY KEY,
+                        value TEXT
+                    );
+                `);
+                this.dbInstance.run(`
+                    CREATE TABLE IF NOT EXISTS achievements (
+                        achievement_id TEXT PRIMARY KEY,
+                        achieved_on DATETIME,
+                        description TEXT
+                    );
+                `);
+                // Simplified from previous, more complex opening pattern tables. Player opening seq in game_sessions
+            }
+
+            save() {
+                if (this.dbInstance) {
+                    try {
+                        const binaryArray = this.dbInstance.export();
+                        const base64String = this._uint8ArrayToBase64(binaryArray);
+                        localStorage.setItem('chessMasterDb_v2', base64String);
+                    } catch (e) { console.error("Error saving database to localStorage:", e); }
+                }
+            }
+
+            _uint8ArrayToBase64 = bytes => btoa(String.fromCharCode(...bytes));
+            _base64ToUint8Array = base64 => Uint8Array.from(atob(base64), c => c.charCodeAt(0));
+
+            async logGameSessionStart(sessionId, playerColor, aiPersonality, aiDifficulty) {
+                if(!this.dbInstance) return;
+                try {
+                    this.dbInstance.prepare(`
+                        INSERT INTO game_sessions (game_session_id, player_color, ai_personality, ai_difficulty)
+                        VALUES (?, ?, ?, ?)
+                    `).run([sessionId, playerColor, aiPersonality, aiDifficulty]);
+                    this.save();
+                } catch(e) { console.error("Error logging game session start:", e); }
+            }
+
+            async logGameSessionEnd(sessionId, result, terminationReason, playerOpeningSequence) {
+                 if(!this.dbInstance) return;
+                try {
+                    this.dbInstance.prepare(`
+                        UPDATE game_sessions
+                        SET end_time = CURRENT_TIMESTAMP, result = ?, termination_reason = ?, player_opening_sequence = ?
+                        WHERE game_session_id = ?
+                    `).run([result, terminationReason, playerOpeningSequence, sessionId]);
+                    this.save();
+                } catch(e) { console.error("Error logging game session end:", e); }
+            }
+
+             async logPlayerMove(gameSessionId, moveNumber, piece, from, to, isCapture, isCheck, promotedTo, fenBefore, fenAfter) {
+                if (!this.dbInstance) return;
+                try {
+                    this.dbInstance.prepare(`
+                        INSERT INTO player_moves (game_session_id, move_number, piece, from_square, to_square, is_capture, is_check, promoted_to, fen_before, fen_after)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    `).run([gameSessionId, moveNumber, piece, from, to, isCapture, isCheck, promotedTo, fenBefore, fenAfter]);
+                    this.save();
+                } catch (e) { console.error("Error logging player move:", e); }
+            }
+
+            async getPlayerStats() { // Example: win/loss/draw count
+                if (!this.dbInstance) return { wins: 0, losses: 0, draws: 0, total: 0 };
+                try {
+                    const res = this.dbInstance.exec(`
+                        SELECT
+                            SUM(CASE WHEN result = 'win' THEN 1 ELSE 0 END) as wins,
+                            SUM(CASE WHEN result = 'loss' THEN 1 ELSE 0 END) as losses,
+                            SUM(CASE WHEN result = 'draw' THEN 1 ELSE 0 END) as draws,
+                            COUNT(*) as total
+                        FROM game_sessions WHERE result IS NOT NULL;
+                    `);
+                    if (res.length > 0 && res[0].values.length > 0) {
+                        const [wins, losses, draws, total] = res[0].values[0];
+                        return { wins: wins || 0, losses: losses || 0, draws: draws || 0, total: total || 0 };
+                    }
+                } catch (e) { console.error("Error getting player stats:", e); }
+                return { wins: 0, losses: 0, draws: 0, total: 0 };
+            }
+
+            async getRecentGameSessions(limit = 5) {
+                if (!this.dbInstance) return [];
+                try {
+                    const stmt = this.dbInstance.prepare(`
+                        SELECT game_session_id, strftime('%Y-%m-%d %H:%M', start_time) as start_time_fmt, result, ai_personality, termination_reason
+                        FROM game_sessions
+                        ORDER BY start_time DESC LIMIT ?
+                    `);
+                    stmt.bind([limit]);
+                    const sessions = [];
+                    while(stmt.step()) {
+                        sessions.push(stmt.getAsObject());
+                    }
+                    stmt.free();
+                    return sessions;
+                } catch (e) { console.error("Error getting recent game sessions:", e); return []; }
+            }
+
+            async getGameMoves(gameSessionId) {
+                if (!this.dbInstance) return [];
+                 try {
+                    const stmt = this.dbInstance.prepare(`
+                        SELECT fen_before, fen_after, from_square, to_square, piece
+                        FROM player_moves
+                        WHERE game_session_id = ? ORDER BY move_number ASC, timestamp ASC
+                    `); // Added timestamp ordering as fallback if move_number gets messy
+                    stmt.bind([gameSessionId]);
+                    const moves = [];
+                    while(stmt.step()) {
+                        moves.push(stmt.getAsObject());
+                    }
+                    stmt.free();
+                    return moves;
+                } catch (e) { console.error("Error getting game moves:", e); return []; }
+            }
+
+            async saveAISetting(key, value) {
+                if(!this.dbInstance) return;
+                try {
+                    this.dbInstance.prepare("INSERT OR REPLACE INTO ai_settings (setting_key, value) VALUES (?, ?)")
+                                   .run([key, value.toString()]);
+                    this.save();
+                } catch(e) { console.error(`Error saving AI setting ${key}:`, e);}
+            }
+
+            async loadAISetting(key, defaultValue) {
+                if(!this.dbInstance) return defaultValue;
+                try {
+                    const stmt = this.dbInstance.prepare("SELECT value FROM ai_settings WHERE setting_key = ?");
+                    stmt.bind([key]);
+                    let result = defaultValue;
+                    if (stmt.step()) {
+                        result = stmt.get()[0];
+                    }
+                    stmt.free();
+                    // Attempt to parse if it looks like a number or boolean
+                    if (typeof defaultValue === 'number' && !isNaN(parseFloat(result))) return parseFloat(result);
+                    if (typeof defaultValue === 'boolean') return result === 'true';
+                    return result;
+                } catch (e) { console.error(`Error loading AI setting ${key}:`, e); return defaultValue;}
+            }
+
+            async logAchievement(id, description) {
+                 if(!this.dbInstance) return false; // Return false if not logged
+                 try {
+                    // Check if already achieved
+                    const stmtCheck = this.dbInstance.prepare("SELECT 1 FROM achievements WHERE achievement_id = ?");
+                    stmtCheck.bind([id]);
+                    if (stmtCheck.step()) {
+                        stmtCheck.free();
+                        return false; // Already achieved
+                    }
+                    stmtCheck.free();
+
+                    this.dbInstance.prepare("INSERT INTO achievements (achievement_id, achieved_on, description) VALUES (?, CURRENT_TIMESTAMP, ?)")
+                                   .run([id, description]);
+                    this.save();
+                    return true; // Newly achieved
+                 } catch (e) { console.error("Error logging achievement:", e); return false; }
+            }
+
+            async getAchievements() {
+                if(!this.dbInstance) return [];
+                try {
+                    const stmt = this.dbInstance.prepare("SELECT achievement_id, description FROM achievements ORDER BY achieved_on DESC");
+                    const achievements = [];
+                    while(stmt.step()) {
+                        achievements.push(stmt.getAsObject());
+                    }
+                    stmt.free();
+                    return achievements;
+                } catch (e) { console.error("Error getting achievements:", e); return [];}
+            }
+
+            async clearHistory() {
+                if (!this.dbInstance) return;
+                try {
+                    this.dbInstance.run("DELETE FROM player_moves");
+                    this.dbInstance.run("DELETE FROM game_sessions");
+                    // Optionally, keep achievements and settings
+                    // this.dbInstance.run("DELETE FROM achievements");
+                    // this.dbInstance.run("DELETE FROM ai_settings");
+                    this.save();
+                    console.log("Game history cleared.");
+                } catch(e) { console.error("Error clearing history:", e); }
+            }
+        }
+
+
+        class ChessGame {
+            constructor() { this.reset(); }
+
+            reset(aiSettings = {}) {
+                this.board = INITIAL_BOARD.map(row => row.slice());
+                this.turn = WHITE;
+                this.history = []; // Stores { from, to, piece, captured, fenBefore, fenAfter, turn, isCheck, promotion }
+                this.capturedPieces = { w: [], b: [] };
+                this.gameOver = false;
+                this.winner = null;
+                this.terminationReason = null; // e.g., 'checkmate', 'stalemate'
+                this.gameSessionId = `game_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+                this.playerOpeningSequenceInternal = []; // Stores player's moves like "e2e4"
+                this.castlingRights = { K: true, Q: true, k: true, q: true };
+                this.enPassantTarget = null;
+                this.halfmoveClock = 0;
+                this.fullmoveNumber = 1;
+
+                if (dbManager) {
+                    dbManager.logGameSessionStart(
+                        this.gameSessionId,
+                        WHITE, // Assuming player is always white for now
+                        aiSettings.personality || 'adaptive',
+                        aiSettings.difficulty || 2
+                    );
+                }
+            }
+
+            toFEN() {
+                let fen = '';
+                for (let r = 0; r < 8; r++) {
+                    let empty = 0;
+                    for (let c = 0; c < 8; c++) {
+                        const piece = this.board[r][c];
+                        if (piece) {
+                            if (empty > 0) fen += empty;
+                            fen += piece;
+                            empty = 0;
+                        } else { empty++; }
+                    }
+                    if (empty > 0) fen += empty;
+                    if (r < 7) fen += '/';
+                }
+                fen += ` ${this.turn}`;
+                let castleStr = "";
+                if (this.castlingRights.K) castleStr += 'K'; if (this.castlingRights.Q) castleStr += 'Q';
+                if (this.castlingRights.k) castleStr += 'k'; if (this.castlingRights.q) castleStr += 'q';
+                fen += ` ${castleStr || '-'}`;
+                fen += ` ${this.enPassantTargetSquareToFEN() || '-'}`;
+                fen += ` ${this.halfmoveClock}`;
+                fen += ` ${this.fullmoveNumber}`;
+                return fen;
+            }
+
+            // Helper to convert internal {r,c} en passant target to FEN string like "e3"
+            enPassantTargetSquareToFEN() {
+                if (!this.enPassantTarget) return null;
+                return `${String.fromCharCode(97 + this.enPassantTarget.c)}${8 - this.enPassantTarget.r}`;
+            }
+
+            // Simplified legal move generation - THIS NEEDS A REAL CHESS ENGINE FOR ACCURACY
+            getLegalMovesForPiece(r, c) {
+                const pieceChar = this.board[r][c];
+                if (!pieceChar) return [];
+                const pieceDetails = getPieceDetails(pieceChar);
+                if (pieceDetails.color !== this.turn && !arguments[2]) return []; // arguments[2] is a bypass for isInCheck
+
+                let moves = [];
+                // TODO: Implement actual chess move logic for each piece type.
+                // This is still the placeholder logic.
+                // PAWN
+                if (pieceDetails.type === PAWN) {
+                    const dir = pieceDetails.color === WHITE ? -1 : 1;
+                    const startRow = pieceDetails.color === WHITE ? 6 : 1;
+                    // Move one forward
+                    if (r + dir >= 0 && r + dir < 8 && !this.board[r+dir][c]) {
+                        moves.push({ from: {r,c}, to: {r:r+dir, c:c}, promotion: (r+dir === 0 || r+dir === 7) ? (pieceDetails.color === WHITE ? 'Q' : 'q') : null });
+                        // Move two forward
+                        if (r === startRow && !this.board[r+2*dir][c]) {
+                             moves.push({ from: {r,c}, to: {r:r+2*dir, c:c} });
+                        }
+                    }
+                    // Capture
+                    for (let dc of [-1,1]) {
+                        if (r+dir >=0 && r+dir < 8 && c+dc >=0 && c+dc < 8) {
+                            const target = this.board[r+dir][c+dc];
+                            if (target && getPieceDetails(target).color !== pieceDetails.color) {
+                                moves.push({ from: {r,c}, to: {r:r+dir, c:c+dc}, capture: target, promotion: (r+dir === 0 || r+dir === 7) ? (pieceDetails.color === WHITE ? 'Q' : 'q') : null });
+                            }
+                            // En Passant (simplified check)
+                            if (this.enPassantTarget && this.enPassantTarget.r === r+dir && this.enPassantTarget.c === c+dc) {
+                                moves.push({ from: {r,c}, to: {r:r+dir, c:c+dc}, enPassant: true, capture: this.board[r][c+dc] });
+                            }
+                        }
+                    }
+                } else { // Other pieces (very basic pseudo-legal)
+                     const knightMoves = [[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]];
+                     const bishopDirs = [[-1,-1],[-1,1],[1,-1],[1,1]];
+                     const rookDirs = [[-1,0],[1,0],[0,-1],[0,1]];
+                     const queenKingDirs = [...bishopDirs, ...rookDirs];
+
+                     let pieceDirs = [];
+                     let singleStep = false;
+
+                     switch(pieceDetails.type) {
+                        case KNIGHT: pieceDirs = knightMoves; singleStep = true; break;
+                        case BISHOP: pieceDirs = bishopDirs; break;
+                        case ROOK: pieceDirs = rookDirs; break;
+                        case QUEEN: pieceDirs = queenKingDirs; break;
+                        case KING: pieceDirs = queenKingDirs; singleStep = true; break;
+                     }
+
+                     for (const [dr, dc] of pieceDirs) {
+                        for (let i = 1; i < 8; i++) {
+                            const nr = r + dr * i;
+                            const nc = c + dc * i;
+
+                            if (nr < 0 || nr >= 8 || nc < 0 || nc >= 8) break; // Off board
+
+                            const targetPieceChar = this.board[nr][nc];
+                            if (!targetPieceChar) { // Empty square
+                                moves.push({ from: {r,c}, to: {r:nr, c:nc} });
+                            } else { // Square occupied
+                                if (getPieceDetails(targetPieceChar).color !== pieceDetails.color) {
+                                    moves.push({ from: {r,c}, to: {r:nr, c:nc}, capture: targetPieceChar });
+                                }
+                                break; // Path blocked
+                            }
+                            if (singleStep) break; // For Knight and King
+                        }
+                     }
+                     // Castling (simplified - no check through squares, just checks origin/dest)
+                     if (pieceDetails.type === KING) {
+                        // Kingside
+                        if (this.castlingRights[pieceDetails.color === WHITE ? 'K' : 'k'] && !this.board[r][c+1] && !this.board[r][c+2]) {
+                            moves.push({ from: {r,c}, to: {r:r, c:c+2}, castling: 'K' });
+                        }
+                        // Queenside
+                        if (this.castlingRights[pieceDetails.color === WHITE ? 'Q' : 'q'] && !this.board[r][c-1] && !this.board[r][c-2] && !this.board[r][c-3]) {
+                            moves.push({ from: {r,c}, to: {r:r, c:c-2}, castling: 'Q' });
+                        }
+                     }
+                }
+                return arguments[2] ? moves : moves.filter(m => { // If not bypassing for isInCheck
+                    const tempGame = this.clone();
+                    tempGame._applyMoveInternal(m.from, m.to, m.promotion, m.castling, m.enPassant);
+                    return !tempGame.isInCheck(pieceDetails.color);
+                });
+            }
+
+            getAllLegalMoves(color) {
+                const moves = [];
+                for (let r = 0; r < 8; r++) {
+                    for (let c = 0; c < 8; c++) {
+                        const pieceChar = this.board[r][c];
+                        if (pieceChar && getPieceDetails(pieceChar).color === color) {
+                            moves.push(...this.getLegalMovesForPiece(r, c));
+                        }
+                    }
+                }
+                return moves;
+            }
+
+            _applyMoveInternal(from, to, promotionPiece = null, castlingType = null, isEnPassant = false) {
+                const pieceToMove = this.board[from.r][from.c];
+                let captured = this.board[to.r][to.c];
+                let enPassantCapturedPiece = null;
+
+                this.board[to.r][to.c] = pieceToMove;
+                this.board[from.r][from.c] = null;
+
+                // Promotion
+                if (getPieceDetails(pieceToMove)?.type === PAWN) {
+                    if ((getPieceDetails(pieceToMove).color === WHITE && to.r === 0) ||
+                        (getPieceDetails(pieceToMove).color === BLACK && to.r === 7)) {
+                        this.board[to.r][to.c] = promotionPiece || (getPieceDetails(pieceToMove).color === WHITE ? 'Q' : 'q');
+                    }
+                }
+
+                // Castling
+                if (castlingType) {
+                    const rookFromC = castlingType === 'K' ? 7 : 0;
+                    const rookToC = castlingType === 'K' ? to.c - 1 : to.c + 1;
+                    this.board[from.r][rookToC] = this.board[from.r][rookFromC];
+                    this.board[from.r][rookFromC] = null;
+                }
+
+                // En Passant capture
+                if (isEnPassant) {
+                    const capturedPawnRow = from.r; // Same row as attacking pawn
+                    const capturedPawnCol = to.c;   // Same col as landing square
+                    enPassantCapturedPiece = this.board[capturedPawnRow][capturedPawnCol];
+                    this.board[capturedPawnRow][capturedPawnCol] = null;
+                    captured = enPassantCapturedPiece; // For history and capture list
+                }
+
+                // Update castling rights
+                if (pieceToMove === 'K') { this.castlingRights.K = false; this.castlingRights.Q = false; }
+                if (pieceToMove === 'k') { this.castlingRights.k = false; this.castlingRights.q = false; }
+                if (from.r === 7) { // White's back rank
+                    if (from.c === 0 && pieceToMove === 'R') this.castlingRights.Q = false;
+                    if (from.c === 7 && pieceToMove === 'R') this.castlingRights.K = false;
+                }
+                if (from.r === 0) { // Black's back rank
+                     if (from.c === 0 && pieceToMove === 'r') this.castlingRights.q = false;
+                     if (from.c === 7 && pieceToMove === 'r') this.castlingRights.k = false;
+                }
+                // If a rook is captured on its starting square
+                if (to.r === 7) {
+                    if (to.c === 0 && captured === 'R') this.castlingRights.Q = false;
+                    if (to.c === 7 && captured === 'R') this.castlingRights.K = false;
+                }
+                if (to.r === 0) {
+                     if (to.c === 0 && captured === 'r') this.castlingRights.q = false;
+                     if (to.c === 7 && captured === 'r') this.castlingRights.k = false;
+                }
+
+
+                return { pieceToMove, captured };
+            }
+
+            async makeMove(from, to, promotionPiece = null, isPlayerMove = true) {
+                const fenBefore = this.toFEN();
+                const pieceChar = this.board[from.r][from.c];
+                if (!pieceChar || getPieceDetails(pieceChar).color !== this.turn) return false;
+
+                const legalMoves = this.getLegalMovesForPiece(from.r, from.c);
+                const move = legalMoves.find(m => m.to.r === to.r && m.to.c === to.c &&
+                                             (!m.promotion || m.promotion === (promotionPiece || (this.turn === WHITE ? 'Q' : 'q'))));
+
+
+                if (!move) {
+                    console.warn("Illegal move attempted:", {from, to, pieceChar, turn: this.turn, promotionPiece});
+                    return false;
+                }
+
+                const { captured } = this._applyMoveInternal(from, to, promotionPiece || move.promotion, move.castling, move.enPassant);
+
+                const isPawnMove = getPieceDetails(pieceChar)?.type === PAWN;
+                if (captured || isPawnMove) {
+                    this.halfmoveClock = 0;
+                } else {
+                    this.halfmoveClock++;
+                }
+
+                // Set en passant target square for next turn
+                if (isPawnMove && Math.abs(from.r - to.r) === 2) {
+                    this.enPassantTarget = { r: (from.r + to.r) / 2, c: from.c };
+                } else {
+                    this.enPassantTarget = null;
+                }
+
+                const currentTurnBeforeSwitch = this.turn;
+                const isCurrentlyInCheck = this.isInCheck(currentTurnBeforeSwitch); // Check status *before* switching turn
+
+                const fromAlg = `${String.fromCharCode(97+from.c)}${8-from.r}`;
+                const toAlg = `${String.fromCharCode(97+to.c)}${8-to.r}`;
+                const fenAfter = this.toFEN();
+
+                // Logging to DB
+                if (dbManager) {
+                    // For player moves or AI moves, log to general player_moves table
+                    dbManager.logPlayerMove(this.gameSessionId,
+                                            this.fullmoveNumber * 2 - (currentTurnBeforeSwitch === WHITE ? 1:0),
+                                            pieceChar, fromAlg, toAlg,
+                                            !!captured, isCurrentlyInCheck, promotionPiece, fenBefore, fenAfter);
+                }
+
+                if (isPlayerMove && this.turn === WHITE && this.fullmoveNumber <= 5) { // Track player's first N moves
+                    this.playerOpeningSequenceInternal.push(`${fromAlg}${toAlg}`);
+                }
+
+                this.history.push({ from, to, piece: pieceChar, captured, fenBefore, fenAfter, turn: currentTurnBeforeSwitch, isCheck: isCurrentlyInCheck, promotion: promotionPiece || move.promotion, castling: move.castling, enPassant: move.enPassant });
+
+                if (captured) {
+                    this.capturedPieces[currentTurnBeforeSwitch].push(captured);
+                }
+
+                if (this.turn === BLACK) {
+                    this.fullmoveNumber++;
+                }
+                this.turn = this.turn === WHITE ? BLACK : WHITE;
+                this.updateGameOverStatus();
+                return true;
+            }
+
+            findKing(color) {
+                const kingChar = color === WHITE ? 'K' : 'k';
+                for (let r_idx = 0; r_idx < 8; r_idx++) {
+                    for (let c_idx = 0; c_idx < 8; c_idx++) {
+                        if (this.board[r_idx][c_idx] === kingChar) {
+                            return {r: r_idx, c: c_idx};
+                        }
+                    }
+                }
+                return null; // Should not happen in a valid game
+            }
+
+            isSquareAttacked(r, c, byColor) {
+                // Check if any piece of 'byColor' can attack square (r,c)
+                // This needs to check all pieces of 'byColor'
+                // For a simplified check: Iterate over all pieces of `byColor`
+                // and see if {r,c} is in their `getLegalMovesForPiece(..., ..., true)` list (bypassing king safety check)
+                for (let R = 0; R < 8; R++) {
+                    for (let C = 0; C < 8; C++) {
+                        const pieceChar = this.board[R][C];
+                        if (pieceChar && getPieceDetails(pieceChar).color === byColor) {
+                            const attackerMoves = this.getLegalMovesForPiece(R, C, true); // true to bypass king safety check
+                            if (attackerMoves.some(m => m.to.r === r && m.to.c === c)) {
+                                return true;
+                            }
+                        }
+                    }
+                }
+                return false;
+            }
+
+            isInCheck(color) {
+                const kingPos = this.findKing(color);
+                if (!kingPos) return true; // No king = problem, treat as check
+                return this.isSquareAttacked(kingPos.r, kingPos.c, color === WHITE ? BLACK : WHITE);
+            }
+
+            isCheckmate(color) {
+                return this.isInCheck(color) && this.getAllLegalMoves(color).length === 0;
+            }
+
+            isStalemate(color) {
+                return !this.isInCheck(color) && this.getAllLegalMoves(color).length === 0;
+            }
+
+            isDrawByInsufficientMaterial() {
+                 const pieces = this.board.flat().filter(p => p !== null);
+                 const pieceCounts = {};
+                 pieces.forEach(p => {
+                    const type = p.toLowerCase();
+                    pieceCounts[type] = (pieceCounts[type] || 0) + 1;
+                 });
+
+                 if (pieces.length <= 2) return true; // K vs K
+                 if (pieces.length === 3 && (pieceCounts['n'] === 1 || pieceCounts['b'] === 1)) return true; // K+N vs K or K+B vs K
+                 // More complex cases like K+B vs K+B same color bishops are not handled here.
+                 return false;
+            }
+
+            isFiftyMoveRule() { return this.halfmoveClock >= 100; }
+
+            updateGameOverStatus() {
+                const currentColor = this.turn; // Color whose turn it would be
+                let playerResult = null; // 'win', 'loss', 'draw' from player's (White) perspective
+
+                if (this.isCheckmate(currentColor)) {
+                    this.gameOver = true;
+                    this.winner = currentColor === WHITE ? BLACK : WHITE;
+                    this.terminationReason = 'checkmate';
+                    playerResult = (this.winner === WHITE) ? 'win' : 'loss';
+                } else if (this.isStalemate(currentColor)) {
+                    this.gameOver = true; this.winner = 'draw'; this.terminationReason = 'stalemate'; playerResult = 'draw';
+                } else if (this.isDrawByInsufficientMaterial()) {
+                    this.gameOver = true; this.winner = 'draw'; this.terminationReason = 'insufficient_material'; playerResult = 'draw';
+                } else if (this.isFiftyMoveRule()) {
+                    this.gameOver = true; this.winner = 'draw'; this.terminationReason = 'fifty_move_rule'; playerResult = 'draw';
+                }
+                // TODO: Threefold repetition check - requires history of FENs.
+
+                if (this.gameOver && dbManager) {
+                    const playerOpeningStr = this.playerOpeningSequenceInternal.slice(0,5).join('_'); // First 5 player moves
+                     dbManager.logGameSessionEnd(this.gameSessionId, playerResult, this.terminationReason, playerOpeningStr);
+                }
+            }
+
+            clone() { // Basic clone, may need more for advanced AI simulation
+                const newGame = Object.assign(Object.create(Object.getPrototypeOf(this)), this);
+                newGame.board = this.board.map(row => row.slice());
+                newGame.capturedPieces = {
+                    w: [...this.capturedPieces.w],
+                    b: [...this.capturedPieces.b]
+                };
+                newGame.castlingRights = {...this.castlingRights};
+                newGame.history = [...this.history]; // Shallow copy of history objects is usually fine for simulation
+                return newGame;
+            }
+
+            // For replay: load a FEN string to set the board state
+            loadFEN(fenString) {
+                this.board = Array(8).fill(null).map(() => Array(8).fill(null));
+                const parts = fenString.split(' ');
+                const piecePlacement = parts[0];
+                const activeColor = parts[1];
+                const castling = parts[2];
+                const enPassantTargetAlg = parts[3];
+                const halfmove = parts[4];
+                const fullmove = parts[5];
+
+                let row = 0, col = 0;
+                for (const char of piecePlacement) {
+                    if (char === '/') {
+                        row++;
+                        col = 0;
+                    } else if (/\d/.test(char)) {
+                        col += parseInt(char);
+                    } else {
+                        this.board[row][col] = char;
+                        col++;
+                    }
+                }
+                this.turn = activeColor;
+                this.castlingRights = { K: castling.includes('K'), Q: castling.includes('Q'), k: castling.includes('k'), q: castling.includes('q') };
+                if (enPassantTargetAlg !== '-') {
+                    const epCol = enPassantTargetAlg.charCodeAt(0) - 97;
+                    const epRow = 8 - parseInt(enPassantTargetAlg[1]);
+                    this.enPassantTarget = { r: epRow, c: epCol };
+                } else {
+                    this.enPassantTarget = null;
+                }
+                this.halfmoveClock = parseInt(halfmove);
+                this.fullmoveNumber = parseInt(fullmove);
+            }
+        }
+
+        class AIPlayer {
+            constructor(gameInstance, dbManagerInstance) {
+                this.game = gameInstance;
+                this.db = dbManagerInstance;
+                this.settings = {
+                    personality: 'adaptive',
+                    difficulty: 2, // Corresponds to depth
+                    adaptationSpeed: 0.5,
+                    mimicMode: false, // Default not mimicking
+                    counterMode: false // Default not countering explicitly unless adaptive logic leads there
+                };
+                this.loadSettings();
+            }
+
+            async loadSettings() {
+                if (this.db) {
+                    this.settings.personality = await this.db.loadAISetting('ai_personality', 'adaptive');
+                    this.settings.difficulty = await this.db.loadAISetting('ai_difficulty', 2);
+                    this.settings.adaptationSpeed = await this.db.loadAISetting('ai_adaptation_speed', 0.5);
+                }
+                this.updateAISettingsUI();
+            }
+
+            updateSettings(newSettings) {
+                this.settings = { ...this.settings, ...newSettings };
+                if (this.db) {
+                    this.db.saveAISetting('ai_personality', this.settings.personality);
+                    this.db.saveAISetting('ai_difficulty', this.settings.difficulty);
+                    this.db.saveAISetting('ai_adaptation_speed', this.settings.adaptationSpeed);
+                }
+                this.updateAISettingsUI();
+            }
+
+            updateAISettingsUI() { // To sync with UI controls
+                if (ui) { // Ensure UI is initialized
+                    ui.updateAIControls(this.settings);
+                }
+            }
+
+            evaluateBoard(boardState, forColor = BLACK) {
+                let score = 0;
+                const pieceValues = { p: 100, n: 320, b: 330, r: 500, q: 900, k: 20000 };
+                // Simplified positional scoring (TODO: expand with actual tables)
+                const centerControlBonus = 20; // Bonus for pieces in center 4x4
+
+                for (let r = 0; r < 8; r++) {
+                    for (let c = 0; c < 8; c++) {
+                        const pieceChar = boardState.board[r][c];
+                        if (pieceChar) {
+                            const piece = getPieceDetails(pieceChar);
+                            let value = pieceValues[piece.type] || 0;
+                             // Add positional bonuses based on personality
+                            if (this.settings.personality === 'aggressive') value += (pieceValues[piece.type] / 10); // Slight boost for material
+                            if (this.settings.personality === 'positional' && r >=2 && r <=5 && c >= 2 && c <=5) value += centerControlBonus;
+
+                            if (piece.color === BLACK) score += value;
+                            else score -= value;
+                        }
+                    }
+                }
+                 // Dynamic Difficulty Adjustment: slightly handicap/boost AI based on player's recent performance (conceptual)
+                // Example: if player has won last 3 games, AI gets a slight bonus to its eval
+                // This would need more persistent player performance tracking.
+
+                return forColor === BLACK ? score : -score;
+            }
+
+            async findBestMove() {
+                let bestMove = null;
+                let bestValue = -Infinity;
+                const currentDepth = parseInt(this.settings.difficulty);
+
+                const legalMoves = this.game.getAllLegalMoves(BLACK);
+                if (legalMoves.length === 0) return null;
+
+                const shuffledMoves = [...legalMoves].sort(() => Math.random() - 0.5);
+
+                for (const move of shuffledMoves) {
+                    const tempGame = this.game.clone();
+                    tempGame._applyMoveInternal(move.from, move.to, move.promotion, move.castling, move.enPassant);
+                    tempGame.turn = WHITE;
+                    const boardValue = await this.minimax(tempGame, currentDepth - 1, -Infinity, Infinity, false);
+
+                    if (boardValue > bestValue) {
+                        bestValue = boardValue;
+                        bestMove = move;
+                    }
+                }
+                return bestMove || legalMoves[Math.floor(Math.random() * legalMoves.length)]; // Random if all same
+            }
+
+            async minimax(simulatedGame, depth, alpha, beta, isMaximizingPlayer) {
+                simulatedGame.updateGameOverStatus(); // Ensure game over state is current
+                if (depth === 0 || simulatedGame.gameOver) {
+                    // Add more weight to checkmate/stalemate conditions based on depth
+                    if (simulatedGame.gameOver) {
+                        if (simulatedGame.winner === BLACK) return 100000 + depth * 100; // AI (Black) wins
+                        if (simulatedGame.winner === WHITE) return -100000 - depth * 100; // Player (White) wins
+                        return 0; // Draw
+                    }
+                    return this.evaluateBoard(simulatedGame, isMaximizingPlayer ? BLACK : WHITE);
+                }
+
+                const legalMoves = simulatedGame.getAllLegalMoves(simulatedGame.turn);
+                 if (legalMoves.length === 0) { // Should be caught by simulatedGame.gameOver
+                     return isMaximizingPlayer ? -99999 - depth : 99999 + depth; // Checkmated (or stalemate if not in check)
+                 }
+
+                if (isMaximizingPlayer) { // AI's (Black) turn
+                    let maxEval = -Infinity;
+                    for (const move of legalMoves) {
+                        const childGame = simulatedGame.clone();
+                        childGame._applyMoveInternal(move.from, move.to, move.promotion, move.castling, move.enPassant);
+                        childGame.turn = WHITE;
+                        const evaluation = await this.minimax(childGame, depth - 1, alpha, beta, false);
+                        maxEval = Math.max(maxEval, evaluation);
+                        alpha = Math.max(alpha, evaluation);
+                        if (beta <= alpha) break;
+                    }
+                    return maxEval;
+                } else { // Player's (White) turn
+                    let minEval = Infinity;
+                    for (const move of legalMoves) {
+                        const childGame = simulatedGame.clone();
+                        childGame._applyMoveInternal(move.from, move.to, move.promotion, move.castling, move.enPassant);
+                        childGame.turn = BLACK;
+                        const evaluation = await this.minimax(childGame, depth - 1, alpha, beta, true);
+                        minEval = Math.min(minEval, evaluation);
+                        beta = Math.min(beta, evaluation);
+                        if (beta <= alpha) break;
+                    }
+                    return minEval;
+                }
+            }
+
+            async makeAIMove() {
+                ui.displayMessage("AI is contemplating its brilliant move...");
+                ui.setThinking(true);
+                await new Promise(resolve => setTimeout(resolve, 100)); // UI update time
+
+                const bestMove = await this.findBestMove();
+                ui.setThinking(false);
+
+                if (bestMove) {
+                    await this.game.makeMove(bestMove.from, bestMove.to, bestMove.promotion, false);
+                    ui.renderBoard();
+                    ui.updateCapturedPieces();
+                    const fromAlg = `${String.fromCharCode(97+bestMove.from.c)}${8-bestMove.from.r}`;
+                    const toAlg = `${String.fromCharCode(97+bestMove.to.c)}${8-bestMove.to.r}`;
+                    const moveMsg = `AI moved ${getPieceDetails(bestMove.piece)?.type || 'piece'} from ${fromAlg} to ${toAlg}.`;
+                    ui.displayMessage(moveMsg);
+                    speakMessage(moveMsg);
+
+                    if (this.game.gameOver) {
+                        handleGameOver();
+                    } else {
+                        ui.displayTurn();
+                    }
+                } else {
+                     ui.displayMessage("AI has no moves. This might be a bug or game over.");
+                     if (!this.game.gameOver) {
+                         this.game.updateGameOverStatus();
+                         if(this.game.gameOver) handleGameOver();
+                     }
+                }
+            }
+
+            // Conceptual: generate a hint for the player
+            getHint() {
+                if (this.game.turn !== WHITE || this.game.gameOver) return null;
+                // For simplicity, find the player's best move according to AI's own logic (but for White)
+                // This is computationally expensive if done often.
+                const originalGameTurn = this.game.turn;
+                this.game.turn = WHITE; // Temporarily set to player's turn for evaluation
+
+                let bestPlayerMove = null;
+                let bestPlayerValue = -Infinity;
+                const legalPlayerMoves = this.game.getAllLegalMoves(WHITE);
+
+                if (legalPlayerMoves.length === 0) {
+                    this.game.turn = originalGameTurn; // Reset turn
+                    return "No legal moves found for you.";
+                }
+
+                for (const move of legalPlayerMoves) {
+                    const tempGame = this.game.clone();
+                    tempGame._applyMoveInternal(move.from, move.to, move.promotion, move.castling, move.enPassant);
+                    tempGame.turn = BLACK; // After player's hypothetical move, it's AI's turn
+                    // Evaluate from White's perspective, so maximizing player is true for minimax
+                    const boardValue = this.evaluateBoard(tempGame, WHITE); // Evaluate for white
+
+                    if (boardValue > bestPlayerValue) {
+                        bestPlayerValue = boardValue;
+                        bestPlayerMove = move;
+                    }
+                }
+                this.game.turn = originalGameTurn; // Reset turn
+
+                if (bestPlayerMove) {
+                    const fromAlg = `${String.fromCharCode(97+bestPlayerMove.from.c)}${8-bestPlayerMove.from.r}`;
+                    const toAlg = `${String.fromCharCode(97+bestPlayerMove.to.c)}${8-bestPlayerMove.to.r}`;
+                    return `Consider moving your ${getPieceDetails(this.game.board[bestPlayerMove.from.r][bestPlayerMove.from.c])?.type} from ${fromAlg} to ${toAlg}.`;
+                }
+                return "Hmm, I'm not sure what the best move is right now.";
+            }
+        }
+
+
+        class UIManager {
+            constructor(gameInstance, aiInstance, dbManagerInstance) {
+                this.game = gameInstance;
+                this.ai = aiInstance;
+                this.db = dbManagerInstance;
+                this.boardElement = document.getElementById('chess-board');
+                this.messageElement = document.getElementById('game-message');
+                this.capturedWhiteElement = document.getElementById('captured-white');
+                this.capturedBlackElement = document.getElementById('captured-black');
+                this.selectedSquare = null;
+                this.pieceUnicode = {
+                    'P': '♙', 'N': '♘', 'B': '♗', 'R': '♖', 'Q': '♕', 'K': '♔',
+                    'p': '♟', 'n': '♞', 'b': '♝', 'r': '♜', 'q': '♛', 'k': '♚'
+                };
+                this.postGameModal = document.getElementById('post-game-modal');
+                this.closePostGameModalBtn = document.getElementById('close-post-game-modal');
+                this.postGameTitle = document.getElementById('post-game-title');
+                this.postGameMessage = document.getElementById('post-game-message');
+                this.postGameHighlights = document.getElementById('post-game-highlights');
+                this.strategyRecommendation = document.getElementById('strategy-recommendation');
+                this.replayLastGameBtn = document.getElementById('replay-last-game-btn');
+                this.coachAdviceElement = document.getElementById('coach-advice');
+                this.toggleCoachBtn = document.getElementById('toggle-coach-btn');
+                this.voiceStatusElement = document.getElementById('voice-status');
+                this.badgesContainer = document.getElementById('badges-container');
+                this.statsGamesWon = document.getElementById('stats-games-won');
+                this.matchHistoryList = document.getElementById('match-history-list');
+
+                this.replayControls = document.getElementById('post-game-replay-controls');
+                this.prevMoveBtn = document.getElementById('prev-move-btn');
+                this.nextMoveBtn = document.getElementById('next-move-btn');
+                this.exitReplayBtn = document.getElementById('exit-replay-btn');
+                this.replayMoveInfo = document.getElementById('replay-move-info');
+
+
+                this._initBoardDOM();
+                this._initEventListeners();
+                this.renderBoard();
+                this.updateGamification();
+                this.loadAndDisplayMatchHistory();
+            }
+
+            _initBoardDOM() {
+                this.boardElement.innerHTML = '';
+                for (let r = 0; r < 8; r++) {
+                    for (let c = 0; c < 8; c++) {
+                        const square = document.createElement('div');
+                        square.classList.add('square');
+                        square.classList.add((r + c) % 2 === 0 ? 'light' : 'dark');
+                        square.dataset.r = r;
+                        square.dataset.c = c;
+                        square.addEventListener('click', () => this.handleSquareClick(r, c));
+                        this.boardElement.appendChild(square);
+                    }
+                }
+                document.getElementById('new-game-btn').addEventListener('click', () => this.startNewGame());
+            }
+
+            _initEventListeners() {
+                this.closePostGameModalBtn.onclick = () => this.postGameModal.style.display = "none";
+                window.onclick = (event) => {
+                    if (event.target == this.postGameModal) {
+                        this.postGameModal.style.display = "none";
+                    }
+                };
+                this.replayLastGameBtn.onclick = async () => {
+                    this.postGameModal.style.display = "none";
+                    await this.startReplayLastGame();
+                };
+
+                this.toggleCoachBtn.addEventListener('click', () => {
+                    coachEnabled = !coachEnabled;
+                    this.toggleCoachBtn.textContent = `Coach: ${coachEnabled ? 'ON' : 'OFF'}`;
+                    this.toggleCoachBtn.style.backgroundColor = coachEnabled ? '#e67e22' : '#1abc9c'; // Orange when ON
+                    if (!coachEnabled) this.coachAdviceElement.textContent = "Coach advice will appear here...";
+                    else this.coachAdviceElement.textContent = "Coach is ON. Hints will appear when it's your turn.";
+                });
+
+                document.getElementById('ai-personality-select').addEventListener('change', (e) => {
+                    this.ai.updateSettings({ personality: e.target.value });
+                });
+                document.getElementById('ai-difficulty-slider').addEventListener('input', (e) => { // 'input' for live update
+                    const difficulty = parseInt(e.target.value);
+                    this.ai.updateSettings({ difficulty: difficulty });
+                    document.getElementById('ai-difficulty-value').textContent = difficulty;
+                });
+                document.getElementById('ai-adaptation-speed-slider').addEventListener('input', (e) => {
+                    const speed = parseFloat(e.target.value);
+                    this.ai.updateSettings({ adaptationSpeed: speed });
+                     document.getElementById('ai-adaptation-speed-value').textContent = speed.toFixed(1);
+                });
+                document.getElementById('voice-command-btn').addEventListener('click', () => toggleVoiceCommands());
+
+                // Replay controls
+                this.prevMoveBtn.onclick = () => this.replayNavigate(-1);
+                this.nextMoveBtn.onclick = () => this.replayNavigate(1);
+                this.exitReplayBtn.onclick = () => this.exitReplayMode();
+
+                document.getElementById('clear-history-btn').addEventListener('click', async () => {
+                    if (confirm("Are you sure you want to clear all game history? This cannot be undone.")) {
+                        await dbManager.clearHistory();
+                        this.loadAndDisplayMatchHistory();
+                        this.updateGamification(); // Reset stats shown
+                        alert("History cleared.");
+                    }
+                });
+            }
+
+            updateAIControls(settings) {
+                document.getElementById('ai-personality-select').value = settings.personality;
+                document.getElementById('ai-difficulty-slider').value = settings.difficulty;
+                document.getElementById('ai-difficulty-value').textContent = settings.difficulty;
+                document.getElementById('ai-adaptation-speed-slider').value = settings.adaptationSpeed;
+                document.getElementById('ai-adaptation-speed-value').textContent = settings.adaptationSpeed.toFixed(1);
+            }
+
+            renderBoard(boardState = this.game.board) {
+                const squares = this.boardElement.children;
+                const kingInCheckPos = this.game.gameOver ? null : (this.game.isInCheck(this.game.turn) ? this.game.findKing(this.game.turn) : null);
+
+                for (let r = 0; r < 8; r++) {
+                    for (let c = 0; c < 8; c++) {
+                        const pieceChar = boardState[r][c];
+                        const squareElement = squares[r * 8 + c];
+                        squareElement.innerHTML = pieceChar ? `<span class="piece">${this.pieceUnicode[pieceChar] || pieceChar}</span>` : '';
+                        squareElement.classList.remove('selected', 'valid-move', 'last-move-from', 'last-move-to', 'in-check');
+
+                        if (this.selectedSquare && this.selectedSquare.r === r && this.selectedSquare.c === c) {
+                            squareElement.classList.add('selected');
+                        }
+                        if (kingInCheckPos && kingInCheckPos.r === r && kingInCheckPos.c === c) {
+                            squareElement.classList.add('in-check');
+                        }
+                    }
+                }
+                // Highlight last move
+                if (this.game.history && this.game.history.length > 0 && !currentReplayGame) { // Don't show during replay init
+                    const lastHistoryEntry = this.game.history[this.game.history.length - 1];
+                    const fromSq = squares[lastHistoryEntry.from.r * 8 + lastHistoryEntry.from.c];
+                    const toSq = squares[lastHistoryEntry.to.r * 8 + lastHistoryEntry.to.c];
+                    if (fromSq) fromSq.classList.add('last-move-from');
+                    if (toSq) toSq.classList.add('last-move-to');
+                }
+                 this.displayTurn();
+            }
+
+            displayTurn() {
+                if (this.game.gameOver && !currentReplayGame) return; // Don't update turn if game over and not replaying
+                if (currentReplayGame) {
+                     // Display info about the replayed move's turn
+                    const moveData = currentReplayGame.moves[currentReplayMoveIndex-1]; // -1 because index is for *next* move
+                    if(moveData) {
+                        const turnColor = getPieceDetails(moveData.piece).color === WHITE ? "White" : "Black";
+                        this.messageElement.textContent = `Replay: ${turnColor} moved ${moveData.from_square} to ${moveData.to_square}`;
+                    } else if (currentReplayMoveIndex === 0) {
+                        this.messageElement.textContent = "Replay: Initial position";
+                    }
+                    return;
+                }
+
+                let turnMsg = `${this.game.turn === WHITE ? 'Your (White)' : 'AI (Black)'}'s turn.`;
+                if (this.game.isInCheck(this.game.turn)) {
+                    turnMsg += " <strong style='color: var(--accent-color2);'>CHECK!</strong>";
+                }
+                this.messageElement.innerHTML = turnMsg; // Use innerHTML for strong tag
+            }
+
+            setThinking(isThinking) {
+                if (isThinking) {
+                    this.messageElement.innerHTML = `AI is contemplating... <div class="spinner"></div>`; // Add a spinner or animation
+                }
+                // The message will be overwritten by AI move or next turn message.
+            }
+
+            async handleSquareClick(r, c) {
+                if (this.game.gameOver || this.game.turn === BLACK || currentReplayGame) return;
+
+                const pieceChar = this.game.board[r][c];
+                const squares = Array.from(this.boardElement.children);
+                squares.forEach(sq => sq.classList.remove('valid-move'));
+
+                if (this.selectedSquare) {
+                    const from = this.selectedSquare;
+                    const to = { r, c };
+
+                    if (from.r === to.r && from.c === to.c) {
+                        this.selectedSquare = null;
+                        this.renderBoard();
+                        return;
+                    }
+                    // Check for promotion
+                    let promotionPiece = null;
+                    const movingPiece = this.game.board[from.r][from.c];
+                    if (getPieceDetails(movingPiece)?.type === PAWN && (to.r === 0 || to.r === 7)) {
+                        promotionPiece = prompt("Promote pawn to (Q, R, B, N)?", "Q")?.toUpperCase();
+                        if (!['Q', 'R', 'B', 'N'].includes(promotionPiece)) promotionPiece = (this.game.turn === WHITE ? 'Q' : 'q');
+                        else if (this.game.turn === BLACK) promotionPiece = promotionPiece.toLowerCase();
+                    }
+
+
+                    const moveSuccess = await this.game.makeMove(from, to, promotionPiece, true);
+                    this.selectedSquare = null;
+                    this.renderBoard();
+
+                    if (moveSuccess) {
+                        this.updateCapturedPieces();
+                        if (this.game.gameOver) {
+                            handleGameOver();
+                        } else {
+                            this.displayTurn(); // Update for player's move quickly
+                            // Coach hint after player's move if it's AI's turn and coach is on
+                            // This is probably not useful. Hint should be *before* player moves.
+                            setTimeout(async () => {
+                               await this.ai.makeAIMove();
+                            }, 100);
+                        }
+                    } else {
+                        this.displayMessage("Invalid move. Try again.");
+                        speakMessage("Invalid move.");
+                        setTimeout(() => this.displayTurn(), 2000);
+                    }
+
+                } else if (pieceChar) {
+                    const pieceDetails = getPieceDetails(pieceChar);
+                    if (pieceDetails.color === this.game.turn) {
+                        this.selectedSquare = { r, c };
+                        this.renderBoard();
+
+                        const legalMoves = this.game.getLegalMovesForPiece(r, c);
+                        legalMoves.forEach(move => {
+                            const targetSquareEl = squares[move.to.r * 8 + move.to.c];
+                            if (targetSquareEl) targetSquareEl.classList.add('valid-move');
+                        });
+
+                        if (coachEnabled && this.game.turn === WHITE) {
+                            const hint = this.ai.getHint(); // AI suggests a move FOR WHITE
+                            if (hint) {
+                                this.coachAdviceElement.textContent = `Coach: ${hint}`;
+                                speakMessage(`Coach says: ${hint}`);
+                            } else {
+                                this.coachAdviceElement.textContent = "Coach: No immediate advice.";
+                            }
+                        }
+                    }
+                }
+            }
+
+            displayMessage(msg, isError = false) {
+                this.messageElement.textContent = msg;
+                this.messageElement.style.color = isError ? 'var(--accent-color2)' : 'var(--highlight-color)';
+            }
+
+            updateCapturedPieces() {
+                this.capturedWhiteElement.textContent = 'Captured by You: ' + this.game.capturedPieces.b.map(p => this.pieceUnicode[p] || p).join(' ');
+                this.capturedBlackElement.textContent = 'Captured by AI: ' + this.game.capturedPieces.w.map(p => this.pieceUnicode[p] || p).join(' ');
+            }
+
+            startNewGame() {
+                if (currentReplayGame) this.exitReplayMode();
+
+                const aiCurrentSettings = {
+                    personality: document.getElementById('ai-personality-select').value,
+                    difficulty: parseInt(document.getElementById('ai-difficulty-slider').value)
+                };
+                game.reset(aiCurrentSettings);
+                ai.settings.personality = aiCurrentSettings.personality; // Make sure AI internal settings match
+                ai.settings.difficulty = aiCurrentSettings.difficulty;
+
+                this.selectedSquare = null;
+                this.renderBoard();
+                this.updateCapturedPieces();
+                this.displayMessage("New game started. Your (White) turn.");
+                speakMessage("New game. White to move.");
+                this.coachAdviceElement.textContent = "Coach advice will appear here...";
+                this.loadAndDisplayMatchHistory(); // Refresh history in case new game is after some were cleared
+            }
+
+            showPostGameDialog(title, message, analysisHighlights = [], recommendation = "") {
+                this.postGameTitle.textContent = title;
+                this.postGameMessage.textContent = message;
+
+                this.postGameHighlights.innerHTML = '';
+                if (analysisHighlights.length > 0) {
+                    analysisHighlights.forEach(item => {
+                        const li = document.createElement('li');
+                        li.textContent = item;
+                        this.postGameHighlights.appendChild(li);
+                    });
+                } else {
+                    this.postGameHighlights.innerHTML = "<li>No specific highlights for this game.</li>";
+                }
+
+                this.strategyRecommendation.textContent = recommendation || "Keep practicing to improve your strategies!";
+                this.postGameModal.style.display = "block";
+                this.updateGamification(); // Update stats and badges
+                this.loadAndDisplayMatchHistory(); // Refresh match history
+            }
+
+            async updateGamification() {
+                if (!dbManager) return;
+                const stats = await dbManager.getPlayerStats();
+                this.statsGamesWon.textContent = stats.wins || 0;
+                // Puzzles not implemented yet: this.statsPuzzlesSolved.textContent = ...
+
+                const achievements = await dbManager.getAchievements();
+                this.badgesContainer.innerHTML = '';
+                achievements.forEach(ach => {
+                    const badge = document.createElement('span');
+                    badge.classList.add('badge');
+                    badge.textContent = ach.description.length > 20 ? ach.achievement_id : ach.description; // Shorten if needed
+                    badge.title = ach.description;
+                    this.badgesContainer.appendChild(badge);
+                });
+                if (achievements.length === 0) {
+                     this.badgesContainer.textContent = "No badges earned yet. Keep playing!";
+                }
+            }
+
+            async loadAndDisplayMatchHistory() {
+                if(!dbManager) return;
+                const sessions = await dbManager.getRecentGameSessions(5);
+                this.matchHistoryList.innerHTML = '';
+                if (sessions.length === 0) {
+                    this.matchHistoryList.innerHTML = '<li>No recent games found.</li>';
+                    return;
+                }
+                sessions.forEach(session => {
+                    const li = document.createElement('li');
+                    li.style.fontSize = "0.85em";
+                    li.style.marginBottom = "5px";
+                    li.innerHTML = `
+                        ${session.start_time_fmt} - Result: <strong>${session.result || 'Incomplete'}</strong>
+                        (vs ${session.ai_personality || 'Default AI'}) - ${session.termination_reason || ''}
+                        <button class="btn replay- συγκεκριμένο-game-btn" data-session-id="${session.game_session_id}" style="font-size:0.7em; padding:3px 6px; margin-left:5px;">Replay</button>
+                    `;
+                    this.matchHistoryList.appendChild(li);
+                });
+
+                // Add event listeners to new replay buttons
+                document.querySelectorAll('.replay-specific-game-btn').forEach(button => {
+                    button.addEventListener('click', async (e) => {
+                        const sessionId = e.target.dataset.sessionId;
+                        await this.startReplayGameById(sessionId);
+                    });
+                });
+            }
+
+            async startReplayLastGame() {
+                if (!dbManager || !game.gameSessionId) {
+                    alert("No game session ID found for replay.");
+                    return;
+                }
+                await this.startReplayGameById(game.gameSessionId);
+            }
+
+            async startReplayGameById(sessionId) {
+                const moves = await dbManager.getGameMoves(sessionId);
+                if (moves.length === 0) {
+                    alert("No moves found for this game session to replay.");
+                    return;
+                }
+
+                currentReplayGame = { sessionId, moves };
+                currentReplayMoveIndex = 0; // Start before the first move (initial position)
+
+                this.replayControls.style.display = 'flex';
+                document.getElementById('new-game-btn').disabled = true; // Disable new game during replay
+
+                this.replayUpdateBoard();
+                this.replayUpdateInfo();
+            }
+
+            replayNavigate(direction) {
+                if (!currentReplayGame) return;
+                currentReplayMoveIndex += direction;
+                if (currentReplayMoveIndex < 0) currentReplayMoveIndex = 0;
+                if (currentReplayMoveIndex > currentReplayGame.moves.length) currentReplayMoveIndex = currentReplayGame.moves.length;
+
+                this.replayUpdateBoard();
+                this.replayUpdateInfo();
+            }
+
+            replayUpdateBoard() {
+                if (!currentReplayGame) return;
+                let fenToLoad;
+                if (currentReplayMoveIndex === 0) { // Initial position
+                    fenToLoad = currentReplayGame.moves.length > 0 ? currentReplayGame.moves[0].fen_before : INITIAL_BOARD_FEN; // Assuming INITIAL_BOARD_FEN is defined
+                } else {
+                    fenToLoad = currentReplayGame.moves[currentReplayMoveIndex - 1].fen_after;
+                }
+
+                // Use a temporary game object to load FEN and render, or modify main game object carefully
+                const tempGameForReplay = new ChessGame(); // Create a temporary instance
+                tempGameForReplay.loadFEN(fenToLoad);
+                this.renderBoard(tempGameForReplay.board); // Render the temp game's board
+
+                // Highlight the move that LED to this state
+                if (currentReplayMoveIndex > 0) {
+                    const moveData = currentReplayGame.moves[currentReplayMoveIndex - 1];
+                    const fromCoords = this.algToCoords(moveData.from_square);
+                    const toCoords = this.algToCoords(moveData.to_square);
+
+                    const squares = this.boardElement.children;
+                    const fromSqEl = squares[fromCoords.r * 8 + fromCoords.c];
+                    const toSqEl = squares[toCoords.r * 8 + toCoords.c];
+                    if (fromSqEl) fromSqEl.classList.add('last-move-from');
+                    if (toSqEl) toSqEl.classList.add('last-move-to');
+                }
+                 this.displayTurn(); // Update messages for replay
+            }
+
+            algToCoords(alg) { // e.g. "e4" -> {r: 4, c: 4} (0-indexed)
+                const file = alg.charCodeAt(0) - 97;
+                const rank = 8 - parseInt(alg[1]);
+                return { r: rank, c: file };
+            }
+
+
+            replayUpdateInfo() {
+                 if (!currentReplayGame) return;
+                 this.replayMoveInfo.textContent = `Move ${currentReplayMoveIndex}/${currentReplayGame.moves.length}`;
+                 this.prevMoveBtn.disabled = currentReplayMoveIndex === 0;
+                 this.nextMoveBtn.disabled = currentReplayMoveIndex === currentReplayGame.moves.length;
+            }
+
+            exitReplayMode() {
+                currentReplayGame = null;
+                currentReplayMoveIndex = 0;
+                this.replayControls.style.display = 'none';
+                document.getElementById('new-game-btn').disabled = false;
+                this.renderBoard(); // Render current game state
+                this.displayTurn(); // Restore normal turn display
+            }
+        }
+
+        // --- End of Classes ---
+
+
+        async function handleGameOver() {
+            let title = "Game Over!";
+            let message = "";
+            let playerStatus = game.winner === WHITE ? 'win' : (game.winner === BLACK ? 'loss' : 'draw');
+
+            let recommendation = "Keep practicing! Analyze your games to find areas for improvement.";
+            let analysisHighlights = [`Game lasted ${game.fullmoveNumber -1} full moves.`];
+            if(game.history.length > 0){
+                const lastMove = game.history[game.history.length-1];
+                analysisHighlights.push(`Last move: ${getPieceDetails(lastMove.piece)?.type} from ${String.fromCharCode(97+lastMove.from.c)}${8-lastMove.from.r} to ${String.fromCharCode(97+lastMove.to.c)}${8-lastMove.to.r}`);
+            }
+
+
+            if (game.winner === 'draw') {
+                message = `It's a draw by ${game.terminationReason || 'agreement'}!`;
+                recommendation = "Draws can be learning experiences too! Was it a hard-fought battle or a missed win?";
+            } else {
+                const winnerText = game.winner === WHITE ? 'You (White)' : 'AI (Black)';
+                message = `${winnerText} wins by ${game.terminationReason || 'resignation'}!`;
+                if (game.winner === WHITE) { // Player won
+                    recommendation = "Excellent victory! Can you replicate this success against a tougher AI setting?";
+                    if (dbManager) {
+                        const achieved = await dbManager.logAchievement('first_win', 'First Win!');
+                        if(achieved) speakMessage("Congratulations on your first recorded win! Achievement unlocked!");
+
+                        const playerStats = await dbManager.getPlayerStats();
+                        if (playerStats.wins === 5) {
+                           const ach5 = await dbManager.logAchievement('five_wins', 'Five Victories');
+                           if(ach5) speakMessage("Five wins! You're becoming a regular champion! Achievement unlocked!");
+                        }
+                    }
+
+                } else { // AI won
+                    recommendation = "A tough loss. Review the game to see where the AI gained an advantage. Don't give up!";
+                }
+            }
+            ui.showPostGameDialog(title, message, analysisHighlights, recommendation);
+            speakMessage(message);
+        }
+
+        // Voice Command Functionality (Basic)
+        function setupSpeechRecognition() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) {
+                ui.voiceStatusElement.textContent = "Voice recognition not supported by your browser.";
+                document.getElementById('voice-command-btn').disabled = true;
+                return;
+            }
+            speechRecognition = new SpeechRecognition();
+            speechRecognition.continuous = false;
+            speechRecognition.lang = 'en-US';
+            speechRecognition.interimResults = false;
+            speechRecognition.maxAlternatives = 1;
+
+            speechRecognition.onresult = (event) => {
+                const command = event.results[event.results.length - 1][0].transcript.trim().toLowerCase();
+                ui.voiceStatusElement.textContent = `Heard: "${command}"`;
+                processVoiceCommand(command);
+            };
+            speechRecognition.onerror = (event) => {
+                ui.voiceStatusElement.textContent = `Voice error: ${event.error}`;
+            };
+            speechRecognition.onend = () => {
+                 // Can re-enable button or auto-restart listening if desired. For now, manual.
+                document.getElementById('voice-command-btn').disabled = false;
+                document.getElementById('voice-command-btn').style.opacity = 1;
+
+            };
+        }
+
+        let voiceCommandsEnabled = false;
+        function toggleVoiceCommands() {
+            if (!speechRecognition) setupSpeechRecognition();
+            if (!speechRecognition) return; // Still not available
+
+            voiceCommandsEnabled = !voiceCommandsEnabled;
+            if (voiceCommandsEnabled) {
+                try {
+                    speechRecognition.start();
+                    ui.voiceStatusElement.textContent = "Listening for voice commands...";
+                    document.getElementById('voice-command-btn').disabled = true; // Disable while listening
+                    document.getElementById('voice-command-btn').style.opacity = 0.5;
+
+                } catch (e) {
+                    ui.voiceStatusElement.textContent = "Could not start voice recognition.";
+                    voiceCommandsEnabled = false; // Toggle back
+                }
+            } else {
+                 speechRecognition.stop();
+                 ui.voiceStatusElement.textContent = "Voice commands inactive.";
+            }
+        }
+
+
+        function processVoiceCommand(command) {
+            // Example: "move e2 to e4" or "pawn e2 e4"
+            if (game.turn !== WHITE || game.gameOver) {
+                speakMessage("Not your turn or game is over.");
+                return;
+            }
+
+            const moveRegex = /(?:move|place|put)?\s*([a-h][1-8])\s*(?:to)?\s*([a-h][1-8])/i;
+            const match = command.match(moveRegex);
+
+            if (match) {
+                const fromAlg = match[1];
+                const toAlg = match[2];
+                const fromCoords = ui.algToCoords(fromAlg);
+                const toCoords = ui.algToCoords(toAlg);
+
+                if (fromCoords && toCoords) {
+                     speakMessage(`Attempting to move from ${fromAlg} to ${toAlg}.`);
+                     // Simulate click or directly call makeMove
+                     // For simplicity, simulate clicks on the UI which already has logic.
+                     // First, ensure no piece is selected.
+                     if (ui.selectedSquare) {
+                         const currentSelSqEl = ui.boardElement.children[ui.selectedSquare.r * 8 + ui.selectedSquare.c];
+                         currentSelSqEl.click(); // Deselect
+                     }
+                     // Click 'from' then 'to'
+                     const fromSqEl = ui.boardElement.children[fromCoords.r * 8 + fromCoords.c];
+                     const toSqEl = ui.boardElement.children[toCoords.r * 8 + toCoords.c];
+
+                     if (fromSqEl && toSqEl) {
+                        fromSqEl.click(); // Selects 'from'
+                        setTimeout(() => { // Ensure selection is processed
+                            toSqEl.click(); // Selects 'to', triggering move
+                        }, 100); // Short delay
+                     } else {
+                        speakMessage("Invalid squares for voice command.");
+                     }
+                } else {
+                    speakMessage("Could not understand square coordinates.");
+                }
+            } else if (command.includes("new game") || command.includes("reset")) {
+                speakMessage("Starting a new game.");
+                ui.startNewGame();
+            } else if (command.includes("coach") || command.includes("hint")) {
+                document.getElementById('toggle-coach-btn').click(); // Toggle coach state
+                speakMessage(`Coach mode ${coachEnabled ? 'enabled' : 'disabled'}.`);
+                if(coachEnabled && game.turn === WHITE){ // If coach just enabled and it's player's turn, give a hint
+                    const hint = ai.getHint();
+                    if(hint) {
+                        ui.coachAdviceElement.textContent = `Coach: ${hint}`;
+                        speakMessage(`Coach says: ${hint}`);
+                    }
+                }
+            }
+            else {
+                speakMessage("Sorry, I didn't understand that command.");
+            }
+        }
+
+        function speakMessage(text) {
+            if ('speechSynthesis' in window) {
+                const utterance = new SpeechSynthesisUtterance(text);
+                // Optional: configure voice, rate, pitch
+                // const voices = window.speechSynthesis.getVoices();
+                // utterance.voice = voices.find(v => v.lang === 'en-US'); // Example
+                utterance.rate = 1.1;
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        const INITIAL_BOARD_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+
+
+        async function main() {
+            dbManager = new DBManager();
+            await dbManager.init();
+
+            game = new ChessGame(); // Initial reset with default AI settings
+            ai = new AIPlayer(game, dbManager); // AI loads its settings from DB or defaults
+            ui = new UIManager(game, ai, dbManager); // UI initializes and sets AI controls based on AI settings
+
+            // Initial AI settings are loaded by AI constructor, UI constructor calls ai.updateAISettingsUI()
+            // game.reset() inside main will use AI's current settings.
+            const initialAiSettings = {
+                personality: await dbManager.loadAISetting('ai_personality', 'adaptive'),
+                difficulty: await dbManager.loadAISetting('ai_difficulty', 2)
+            };
+            game.reset(initialAiSettings); // Make sure game session starts with current AI settings
+
+            ui.displayMessage("Welcome! Your (White) turn.");
+            speakMessage("Welcome to Adaptive Chess Master. White to move.");
+            setupSpeechRecognition();
+        }
+
+        document.addEventListener('DOMContentLoaded', main);
+    </script>
+</body>
+</html>
