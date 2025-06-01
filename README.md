@@ -1,8 +1,8 @@
 # Adaptive Chess Master 🔥
 
 A browser-based chess game where you can play against an AI with adaptive personalities, learn from your games, and track your progress. Built with HTML, CSS, and vanilla JavaScript, utilizing `sql.js` for in-browser database persistence.
+![chess](https://github.com/user-attachments/assets/d4f18cb8-ed1d-47b7-a567-b2fa5c53b0c9)
 
-![Screenshot Placeholder](https://via.placeholder.com/800x500.png?text=Adaptive+Chess+Master+Game+Interface)
 *(Replace the placeholder above with an actual screenshot of your game!)*
 
 ## 🌟 Features
